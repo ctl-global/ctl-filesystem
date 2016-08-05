@@ -1,1 +1,1 @@
-@%~dp0\.nuget\nuget pack -Properties Configuration=Release
+@%~dp0\.nuget\nuget pack -Prop Platform=AnyCPU -Properties Configuration=Release Ctl.FileSystem.csproj
