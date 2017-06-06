@@ -10,7 +10,7 @@
     and the following disclaimer. Redistributions in binary form must reproduce the above copyright
     notice, this list of conditions and the following disclaimer in the documentation and/or other
     materials provided with the distribution.
- 
+
     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
     IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
     FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
@@ -27,7 +27,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.FtpClient;
+using FluentFTP;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -59,7 +59,38 @@ namespace Ctl
 
         void client_ValidateCertificate(FtpClient control, FtpSslValidationEventArgs e)
         {
-            e.Accept = OnValidateCertificate(e.Certificate.GetCertHashString());
+#if NET40 || NETSTANDARD2_0
+            string hash = e.Certificate.GetCertHashString();
+#else
+            string hash = EncodeHexString(e.Certificate.GetCertHash());
+
+            string EncodeHexString(byte[] sArray)
+            {
+                string result = null;
+                if (sArray != null)
+                {
+                    char[] array = new char[sArray.Length * 2];
+                    int i = 0;
+                    int num = 0;
+                    while (i < sArray.Length)
+                    {
+                        int num2 = (sArray[i] & 240) >> 4;
+                        array[num++] = HexDigit(num2);
+                        num2 = (int)(sArray[i] & 15);
+                        array[num++] = HexDigit(num2);
+                        i++;
+                    }
+                    result = new string(array);
+                }
+                return result;
+            }
+
+            char HexDigit(int num)
+            {
+                return (char)((num < 10) ? (num + 48) : (num + 55));
+            }
+#endif
+            e.Accept = OnValidateCertificate(hash);
         }
 
         protected internal override void Dispose(bool disposing)
@@ -149,7 +180,7 @@ namespace Ctl
                     return new FileEntry(uri, fileName, size != -1 ? size : (long?)null, (DateTime?)null, modTime != DateTime.MinValue ? modTime : (DateTime?)null);
                 }
             }
-            
+
             // otherwise, do nothing.
 
             return new FileSystemEntry(uri, fileName);
